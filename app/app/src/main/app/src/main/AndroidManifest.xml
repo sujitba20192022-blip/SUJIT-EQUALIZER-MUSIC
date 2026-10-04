@@ -8,11 +8,7 @@
     <application
         android:allowBackup="true"
         android:label="SUJIT EQUALIZER MUSIC"
-        android:supportsRtl="true"
-        <application
-    android:allowBackup="true"
-    android:label="SUJIT EQUALIZER MUSIC"
-    android:supportsRtl="true">>
+        android:supportsRtl="true">
 
         <activity
             android:name=".MainActivity"
