@@ -1,27 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?>
+package com.sujit.equalizermusic
 
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:background="#101418">
+import android.app.Activity
+import android.os.Bundle
+import android.graphics.Color
+import android.view.Gravity
+import android.widget.TextView
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="SUJIT EQUALIZER MUSIC"
-        android:textColor="#FFFFFF"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+class MainActivity : Activity() {
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="App is working"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp" />
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-</LinearLayout>
+        val text = TextView(this)
+        text.text = "SUJIT EQUALIZER MUSIC\n\nApp is working"
+        text.textSize = 22f
+        text.setTextColor(Color.WHITE)
+        text.gravity = Gravity.CENTER
+        text.setBackgroundColor(Color.rgb(16, 20, 24))
+
+        setContentView(text)
+    }
+}
