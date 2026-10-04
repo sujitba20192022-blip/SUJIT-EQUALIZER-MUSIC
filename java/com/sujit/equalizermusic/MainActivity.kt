@@ -11,10 +11,15 @@ import android.widget.SeekBar
 import android.widget.TextView
 
 class MainActivity : Activity() {
-
+private val AUDIO_PERMISSION = "android.permission.READ_MEDIA_AUDIO"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+if (android.os.Build.VERSION.SDK_INT >= 33) {
+    requestPermissions(
+        arrayOf(AUDIO_PERMISSION),
+        100
+    )
+}
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
         root.setPadding(30, 40, 30, 30)
