@@ -26,6 +26,7 @@ class MainActivity : Activity() {
     private lateinit var nowPlaying: TextView
     private lateinit var progressBar: SeekBar
     private lateinit var playButton: Button
+    private lateinit var equalizerLayout: LinearLayout
 
     private val songIds = ArrayList<Long>()
     private val songTitles = ArrayList<String>()
@@ -60,7 +61,7 @@ class MainActivity : Activity() {
         val root = LinearLayout(this)
 
         root.orientation = LinearLayout.VERTICAL
-        root.setPadding(20, 30, 20, 20)
+        root.setPadding(20, 25, 20, 15)
         root.setBackgroundColor(Color.rgb(16, 20, 24))
 
         val title = TextView(this)
@@ -82,9 +83,7 @@ class MainActivity : Activity() {
         root.addView(nowPlaying)
 
         progressBar = SeekBar(this)
-
         progressBar.max = 100
-        progressBar.progress = 0
 
         root.addView(progressBar)
 
@@ -97,10 +96,9 @@ class MainActivity : Activity() {
                     fromUser: Boolean
                 ) {
                     if (fromUser && mediaPlayer != null) {
-                        val duration = mediaPlayer!!.duration
-
                         mediaPlayer!!.seekTo(
-                            duration * progress / 100
+                            mediaPlayer!!.duration *
+                                    progress / 100
                         )
                     }
                 }
@@ -116,26 +114,22 @@ class MainActivity : Activity() {
         )
 
         val buttons = LinearLayout(this)
-
         buttons.gravity = Gravity.CENTER
 
         val previous = Button(this)
         previous.text = "⏮"
-
         previous.setOnClickListener {
             playPrevious()
         }
 
         playButton = Button(this)
         playButton.text = "▶"
-
         playButton.setOnClickListener {
             togglePlay()
         }
 
         val next = Button(this)
         next.text = "⏭"
-
         next.setOnClickListener {
             playNext()
         }
@@ -146,15 +140,44 @@ class MainActivity : Activity() {
 
         root.addView(buttons)
 
-        val equalizerTitle = TextView(this)
+        val eqTitle = TextView(this)
 
-        equalizerTitle.text = "🎚️ EQUALIZER"
-        equalizerTitle.textSize = 20f
-        equalizerTitle.setTextColor(Color.WHITE)
-        equalizerTitle.gravity = Gravity.CENTER
-        equalizerTitle.setPadding(0, 15, 0, 15)
+        eqTitle.text = "🎚️ EQUALIZER"
+        eqTitle.textSize = 20f
+        eqTitle.setTextColor(Color.WHITE)
+        eqTitle.gravity = Gravity.CENTER
 
-        root.addView(equalizerTitle)
+        root.addView(eqTitle)
+
+        val eqScroll = HorizontalScrollView(this)
+
+        equalizerLayout = LinearLayout(this)
+
+        equalizerLayout.orientation =
+            LinearLayout.HORIZONTAL
+
+        equalizerLayout.gravity =
+            Gravity.CENTER
+
+        eqScroll.addView(equalizerLayout)
+
+        root.addView(
+            eqScroll,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                230
+            )
+        )
+
+        val bassButton = Button(this)
+
+        bassButton.text = "🔊 BASS BOOST"
+
+        bassButton.setOnClickListener {
+            toggleBassBoost(bassButton)
+        }
+
+        root.addView(bassButton)
 
         val heading = TextView(this)
 
@@ -168,7 +191,9 @@ class MainActivity : Activity() {
 
         val musicList = LinearLayout(this)
 
-        musicList.orientation = LinearLayout.VERTICAL
+        musicList.orientation =
+            LinearLayout.VERTICAL
+
         musicList.id = 12345
 
         listScroll.addView(musicList)
@@ -185,283 +210,155 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
-    private fun getMusicList(): LinearLayout {
-        return findViewById(12345)
-    }
-
-    private fun loadMusic() {
-
-        val musicList = getMusicList()
-
-        musicList.removeAllViews()
-
-        songIds.clear()
-        songTitles.clear()
-
-        val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.TITLE
-        )
-
-        val cursor = contentResolver.query(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            "${MediaStore.Audio.Media.IS_MUSIC} != 0",
-            null,
-            "${MediaStore.Audio.Media.TITLE} ASC"
-        )
-
-        if (cursor == null) {
-            showMessage("Music नहीं मिली")
-            return
-        }
-
-        val idIndex =
-            cursor.getColumnIndex(MediaStore.Audio.Media._ID)
-
-        val titleIndex =
-            cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
-
-        while (cursor.moveToNext()) {
-
-            val id = cursor.getLong(idIndex)
-
-            val title =
-                cursor.getString(titleIndex) ?: "Unknown Song"
-
-            songIds.add(id)
-            songTitles.add(title)
-
-            val song = TextView(this)
-
-            song.text = "▶  $title"
-            song.textSize = 17f
-            song.setTextColor(Color.WHITE)
-            song.setPadding(15, 20, 15, 20)
-
-            val position = songIds.size - 1
-
-            song.setOnClickListener {
-                playSong(position)
-            }
-
-            musicList.addView(song)
-        }
-
-        cursor.close()
-
-        if (songIds.isEmpty()) {
-            showMessage("Phone में कोई music file नहीं मिली")
-        }
-    }
-
-    private fun playSong(position: Int) {
-
-        if (position < 0 || position >= songIds.size) {
-            return
-        }
-
-        try {
-
-            mediaPlayer?.release()
-
-            equalizer?.release()
-            bassBoost?.release()
-
-            val uri: Uri =
-                ContentUris.withAppendedId(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    songIds[position]
-                )
-
-            mediaPlayer =
-                MediaPlayer.create(this, uri)
-
-            if (mediaPlayer == null) {
-                nowPlaying.text = "Song play नहीं हो पाया"
-                return
-            }
-
-            currentSong = position
-
-            nowPlaying.text =
-                "🎵 ${songTitles[position]}"
-
-            setupEqualizer()
-
-            mediaPlayer?.start()
-
-            playButton.text = "⏸"
-
-            mediaPlayer?.setOnCompletionListener {
-                playNext()
-            }
-
-            updateProgress()
-
-        } catch (e: Exception) {
-
-            nowPlaying.text =
-                "Song play नहीं हो पाया"
-        }
-    }
-
     private fun setupEqualizer() {
 
         val player = mediaPlayer ?: return
 
-        val audioSession = player.audioSessionId
-
         try {
 
             equalizer?.release()
 
-            bassBoost?.release()
-
             equalizer =
-                Equalizer(0, audioSession)
+                Equalizer(0, player.audioSessionId)
 
             equalizer?.enabled = true
 
-            bassBoost =
-                BassBoost(0, audioSession)
+            createEqualizerSliders()
 
-            bassBoost?.setStrength(500.toShort())
+            bassBoost?.release()
+
+            bassBoost =
+                BassBoost(0, player.audioSessionId)
 
             bassBoost?.enabled = true
 
         } catch (e: Exception) {
 
-            // Device may not support audio effects
+            // Audio effects unavailable
         }
     }
 
-    private fun togglePlay() {
+    private fun createEqualizerSliders() {
 
-        val player = mediaPlayer ?: return
+        equalizerLayout.removeAllViews()
 
-        if (player.isPlaying) {
+        val eq = equalizer ?: return
 
-            player.pause()
+        val numberOfBands =
+            eq.numberOfBands.toInt()
 
-            playButton.text = "▶"
+        val lower =
+            eq.bandLevelRange[0].toInt()
 
-        } else {
+        val upper =
+            eq.bandLevelRange[1].toInt()
 
-            player.start()
+        for (i in 0 until numberOfBands) {
 
-            playButton.text = "⏸"
+            val band = i.toShort()
 
-            updateProgress()
-        }
-    }
+            val column = LinearLayout(this)
 
-    private fun playNext() {
+            column.orientation =
+                LinearLayout.VERTICAL
 
-        if (songIds.isEmpty()) {
-            return
-        }
+            column.gravity =
+                Gravity.CENTER
 
-        val next =
-            if (currentSong + 1 < songIds.size)
-                currentSong + 1
-            else
-                0
+            val seekBar = SeekBar(this)
 
-        playSong(next)
-    }
+            seekBar.max =
+                upper - lower
 
-    private fun playPrevious() {
+            seekBar.progress =
+                -lower
 
-        if (songIds.isEmpty()) {
-            return
-        }
+            seekBar.rotation = -90f
 
-        val previous =
-            if (currentSong - 1 >= 0)
-                currentSong - 1
-            else
-                songIds.size - 1
+            seekBar.setOnSeekBarChangeListener(
+                object : SeekBar.OnSeekBarChangeListener {
 
-        playSong(previous)
-    }
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
 
-    private fun updateProgress() {
+                        if (fromUser) {
 
-        val player = mediaPlayer ?: return
+                            val level =
+                                (progress + lower)
+                                    .toShort()
 
-        if (!player.isPlaying) {
-            return
-        }
+                            try {
+                                eq.setBandLevel(
+                                    band,
+                                    level
+                                )
+                            } catch (_: Exception) {
+                            }
+                        }
+                    }
 
-        if (player.duration > 0) {
+                    override fun onStartTrackingTouch(
+                        seekBar: SeekBar?
+                    ) {}
 
-            progressBar.progress =
-                (player.currentPosition * 100) /
-                        player.duration
-        }
+                    override fun onStopTrackingTouch(
+                        seekBar: SeekBar?
+                    ) {}
+                }
+            )
 
-        handler.postDelayed(
-            { updateProgress() },
-            500
-        )
-    }
+            val frequency =
+                TextView(this)
 
-    private fun showMessage(message: String) {
+            frequency.text =
+                formatFrequency(
+                    eq.getCenterFreq(band)
+                )
 
-        val text = TextView(this)
+            frequency.textSize = 12f
+            frequency.setTextColor(Color.WHITE)
+            frequency.gravity = Gravity.CENTER
 
-        text.text = message
-        text.textSize = 17f
-        text.setTextColor(Color.LTGRAY)
-        text.gravity = Gravity.CENTER
-        text.setPadding(10, 40, 10, 40)
+            column.addView(
+                seekBar,
+                LinearLayout.LayoutParams(
+                    180,
+                    70
+                )
+            )
 
-        getMusicList().addView(text)
-    }
+            column.addView(frequency)
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-
-        super.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults
-        )
-
-        if (
-            requestCode == 100 &&
-            grantResults.isNotEmpty() &&
-            grantResults[0] ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-
-            loadMusic()
-
-        } else {
-
-            showMessage(
-                "Music permission की जरूरत है"
+            equalizerLayout.addView(
+                column,
+                LinearLayout.LayoutParams(
+                    75,
+                    210
+                )
             )
         }
     }
 
-    override fun onDestroy() {
+    private fun formatFrequency(
+        frequency: Int
+    ): String {
 
-        handler.removeCallbacksAndMessages(null)
+        val hz = frequency / 1000
 
-        equalizer?.release()
-        bassBoost?.release()
-
-        equalizer = null
-        bassBoost = null
-
-        mediaPlayer?.release()
-        mediaPlayer = null
-
-        super.onDestroy()
+        return if (hz >= 1000) {
+            "${hz / 1000}.${(hz % 1000) / 100}kHz"
+        } else {
+            "${hz}Hz"
+        }
     }
-}
+
+    private fun toggleBassBoost(button: Button) {
+
+        val bass = bassBoost ?: return
+
+        try {
+
+            if (bass.enabled
