@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.SujitEqualizerMusic" parent="android:style/Theme.Material.NoActionBar">
+    <style name="Theme.SujitEqualizerMusic"
+        parent="Theme.AppCompat.DayNight.NoActionBar">
+
         <item name="android:fontFamily">sans</item>
-        <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">#101418</item>
         <item name="android:navigationBarColor">#101418</item>
-        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+
     </style>
 
 </resources>
