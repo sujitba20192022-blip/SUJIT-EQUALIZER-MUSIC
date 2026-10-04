@@ -3,16 +3,19 @@ package com.sujit.equalizermusic
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.provider.MediaStore
 import android.graphics.Color
 import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 
 class MainActivity : Activity() {
 
     private lateinit var musicList: LinearLayout
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,7 +42,7 @@ class MainActivity : Activity() {
 
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
-        root.setPadding(25, 30, 25, 20)
+        root.setPadding(20, 30, 20, 20)
         root.setBackgroundColor(Color.rgb(16, 20, 24))
 
         val title = TextView(this)
@@ -49,6 +52,14 @@ class MainActivity : Activity() {
         title.gravity = Gravity.CENTER
 
         root.addView(title)
+
+        val nowPlaying = TextView(this)
+        nowPlaying.text = "\nNow Playing: Nothing"
+        nowPlaying.textSize = 18f
+        nowPlaying.setTextColor(Color.LTGRAY)
+        nowPlaying.gravity = Gravity.CENTER
+
+        root.addView(nowPlaying)
 
         val heading = TextView(this)
         heading.text = "\n🎵 MY MUSIC"
@@ -60,7 +71,14 @@ class MainActivity : Activity() {
         musicList = LinearLayout(this)
         musicList.orientation = LinearLayout.VERTICAL
 
-        root.addView(musicList)
+        root.addView(
+            musicList,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        )
 
         setContentView(root)
     }
@@ -70,6 +88,7 @@ class MainActivity : Activity() {
         musicList.removeAllViews()
 
         val projection = arrayOf(
+            MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST
         )
@@ -87,6 +106,9 @@ class MainActivity : Activity() {
             return
         }
 
+        val idIndex =
+            cursor.getColumnIndex(MediaStore.Audio.Media._ID)
+
         val titleIndex =
             cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)
 
@@ -95,18 +117,24 @@ class MainActivity : Activity() {
 
         while (cursor.moveToNext()) {
 
-            val songTitle = cursor.getString(titleIndex)
-                ?: "Unknown Song"
+            val id = cursor.getLong(idIndex)
 
-            val artist = cursor.getString(artistIndex)
-                ?: "Unknown Artist"
+            val songTitle =
+                cursor.getString(titleIndex) ?: "Unknown Song"
+
+            val artist =
+                cursor.getString(artistIndex) ?: "Unknown Artist"
 
             val song = TextView(this)
 
-            song.text = "🎵  $songTitle\n     $artist"
+            song.text = "▶  $songTitle\n    $artist"
             song.textSize = 17f
             song.setTextColor(Color.WHITE)
-            song.setPadding(15, 20, 15, 20)
+            song.setPadding(15, 18, 15, 18)
+
+            song.setOnClickListener {
+                playSong(id)
+            }
 
             musicList.addView(song)
         }
@@ -115,6 +143,27 @@ class MainActivity : Activity() {
 
         if (musicList.childCount == 0) {
             showMessage("Phone में कोई music file नहीं मिली")
+        }
+    }
+
+    private fun playSong(id: Long) {
+
+        try {
+
+            mediaPlayer?.release()
+
+            val uri = android.content.ContentUris.withAppendedId(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                id
+            )
+
+            mediaPlayer = MediaPlayer.create(this, uri)
+
+            mediaPlayer?.start()
+
+        } catch (e: Exception) {
+
+            showMessage("Song play नहीं हो पाया")
         }
     }
 
@@ -131,24 +180,11 @@ class MainActivity : Activity() {
         musicList.addView(text)
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults
-        )
+    override fun onDestroy() {
 
-        if (requestCode == 100 &&
-            grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED
-        ) {
-            loadMusic()
-        } else {
-            showMessage("Music permission की जरूरत है")
-        }
+        mediaPlayer?.release()
+        mediaPlayer = null
+
+        super.onDestroy()
     }
 }
