@@ -41,76 +41,84 @@ class MainActivity : Activity() {
     private var shuffleEnabled = false
     private var repeatEnabled = false
 
-    private val handler =
-        Handler(Looper.getMainLooper())
+    private val handler = Handler(Looper.getMainLooper())
 
-    override fun onCreate(
-        savedInstanceState: Bundle?
-    ) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        createScreen()
+        try {
+            createScreen()
 
-        if (Build.VERSION.SDK_INT >= 33) {
+            if (Build.VERSION.SDK_INT >= 33) {
 
-            if (
-                checkSelfPermission(
-                    Manifest.permission.READ_MEDIA_AUDIO
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-
-                requestPermissions(
-                    arrayOf(
+                if (
+                    checkSelfPermission(
                         Manifest.permission.READ_MEDIA_AUDIO
-                    ),
-                    100
-                )
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    loadMusic()
+                } else {
+                    requestPermissions(
+                        arrayOf(
+                            Manifest.permission.READ_MEDIA_AUDIO
+                        ),
+                        100
+                    )
+                }
 
             } else {
 
-                loadMusic()
+                if (
+                    Build.VERSION.SDK_INT < 23 ||
+                    checkSelfPermission(
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    loadMusic()
+                } else {
+                    requestPermissions(
+                        arrayOf(
+                            Manifest.permission.READ_EXTERNAL_STORAGE
+                        ),
+                        100
+                    )
+                }
             }
 
-        } else {
+        } catch (e: Exception) {
 
-            loadMusic()
+            showStartupError(e)
         }
-
-        handleServiceAction(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
-
         super.onNewIntent(intent)
 
         setIntent(intent)
 
-        handleServiceAction(intent)
+        try {
+            handleServiceAction(intent)
+        } catch (_: Exception) {
+        }
     }
 
-    private fun handleServiceAction(
-        intent: Intent?
-    ) {
+    private fun handleServiceAction(intent: Intent?) {
 
         when (intent?.action) {
 
             MusicService.ACTION_PLAY -> {
-
                 togglePlay()
             }
 
             MusicService.ACTION_PAUSE -> {
-
                 togglePlay()
             }
 
             MusicService.ACTION_NEXT -> {
-
                 playNext()
             }
 
             MusicService.ACTION_PREVIOUS -> {
-
                 playPrevious()
             }
         }
@@ -118,11 +126,9 @@ class MainActivity : Activity() {
 
     private fun createScreen() {
 
-        val root =
-            LinearLayout(this)
+        val root = LinearLayout(this)
 
-        root.orientation =
-            LinearLayout.VERTICAL
+        root.orientation = LinearLayout.VERTICAL
 
         root.setPadding(
             20,
@@ -135,53 +141,38 @@ class MainActivity : Activity() {
             Color.rgb(16, 20, 24)
         )
 
-        val title =
-            TextView(this)
+        val title = TextView(this)
 
-        title.text =
-            "SUJIT EQUALIZER MUSIC"
+        title.text = "SUJIT EQUALIZER MUSIC"
 
-        title.textSize =
-            23f
+        title.textSize = 23f
 
-        title.setTextColor(
-            Color.WHITE
-        )
+        title.setTextColor(Color.WHITE)
 
-        title.gravity =
-            Gravity.CENTER
+        title.gravity = Gravity.CENTER
 
         root.addView(title)
 
-        nowPlaying =
-            TextView(this)
+        nowPlaying = TextView(this)
 
-        nowPlaying.text =
-            "\n🎵 Nothing Playing"
+        nowPlaying.text = "\n🎵 Nothing Playing"
 
-        nowPlaying.textSize =
-            18f
+        nowPlaying.textSize = 18f
 
-        nowPlaying.setTextColor(
-            Color.LTGRAY
-        )
+        nowPlaying.setTextColor(Color.LTGRAY)
 
-        nowPlaying.gravity =
-            Gravity.CENTER
+        nowPlaying.gravity = Gravity.CENTER
 
         root.addView(nowPlaying)
 
-        progressBar =
-            SeekBar(this)
+        progressBar = SeekBar(this)
 
-        progressBar.max =
-            100
+        progressBar.max = 100
 
         root.addView(progressBar)
 
         progressBar.setOnSeekBarChangeListener(
-            object :
-                SeekBar.OnSeekBarChangeListener {
+            object : SeekBar.OnSeekBarChangeListener {
 
                 override fun onProgressChanged(
                     seekBar: SeekBar?,
@@ -191,21 +182,18 @@ class MainActivity : Activity() {
 
                     if (!fromUser) return
 
-                    val player =
-                        mediaPlayer
+                    try {
 
-                    if (player != null) {
+                        val player = mediaPlayer
 
-                        try {
+                        if (player != null && player.duration > 0) {
 
                             player.seekTo(
-                                player.duration *
-                                        progress /
-                                        100
+                                player.duration * progress / 100
                             )
-
-                        } catch (_: Exception) {
                         }
+
+                    } catch (_: Exception) {
                     }
                 }
 
@@ -221,83 +209,62 @@ class MainActivity : Activity() {
             }
         )
 
-        val buttons =
-            LinearLayout(this)
+        val buttons = LinearLayout(this)
 
-        buttons.gravity =
-            Gravity.CENTER
+        buttons.gravity = Gravity.CENTER
 
-        val previous =
-            Button(this)
+        val previous = Button(this)
 
-        previous.text =
-            "⏮"
+        previous.text = "⏮"
 
         previous.setOnClickListener {
-
             playPrevious()
         }
 
-        playButton =
-            Button(this)
+        playButton = Button(this)
 
-        playButton.text =
-            "▶"
+        playButton.text = "▶"
 
         playButton.setOnClickListener {
-
             togglePlay()
         }
 
-        val next =
-            Button(this)
+        val next = Button(this)
 
-        next.text =
-            "⏭"
+        next.text = "⏭"
 
         next.setOnClickListener {
-
             playNext()
         }
 
         buttons.addView(previous)
+
         buttons.addView(playButton)
+
         buttons.addView(next)
 
         root.addView(buttons)
 
-        // VOLUME
+        val volumeTitle = TextView(this)
 
-        val volumeTitle =
-            TextView(this)
+        volumeTitle.text = "🔊 VOLUME"
 
-        volumeTitle.text =
-            "🔊 VOLUME"
+        volumeTitle.textSize = 18f
 
-        volumeTitle.textSize =
-            18f
+        volumeTitle.setTextColor(Color.WHITE)
 
-        volumeTitle.setTextColor(
-            Color.WHITE
-        )
-
-        volumeTitle.gravity =
-            Gravity.CENTER
+        volumeTitle.gravity = Gravity.CENTER
 
         root.addView(volumeTitle)
 
-        volumeBar =
-            SeekBar(this)
+        volumeBar = SeekBar(this)
 
-        volumeBar.max =
-            100
+        volumeBar.max = 100
 
-        volumeBar.progress =
-            70
+        volumeBar.progress = 70
 
         volumeBar.setOnSeekBarChangeListener(
-            object :
-                SeekBar.OnSeekBarChangeListener {
+            object : SeekBar.OnSeekBarChangeListener {
 
                 override fun onProgressChanged(
                     seekBar: SeekBar?,
@@ -305,11 +272,9 @@ class MainActivity : Activity() {
                     fromUser: Boolean
                 ) {
 
-                    val volume =
-                        progress /
-                                100f
-
                     try {
+
+                        val volume = progress / 100f
 
                         mediaPlayer?.setVolume(
                             volume,
@@ -334,77 +299,53 @@ class MainActivity : Activity() {
 
         root.addView(volumeBar)
 
-        // SHUFFLE + REPEAT
+        val modeButtons = LinearLayout(this)
 
-        val modeButtons =
-            LinearLayout(this)
+        modeButtons.gravity = Gravity.CENTER
 
-        modeButtons.gravity =
-            Gravity.CENTER
+        shuffleButton = Button(this)
 
-        shuffleButton =
-            Button(this)
-
-        shuffleButton.text =
-            "🔀 SHUFFLE OFF"
+        shuffleButton.text = "🔀 SHUFFLE OFF"
 
         shuffleButton.setOnClickListener {
 
-            shuffleEnabled =
-                !shuffleEnabled
+            shuffleEnabled = !shuffleEnabled
 
             updateModeButtons()
         }
 
-        repeatButton =
-            Button(this)
+        repeatButton = Button(this)
 
-        repeatButton.text =
-            "🔁 REPEAT OFF"
+        repeatButton.text = "🔁 REPEAT OFF"
 
         repeatButton.setOnClickListener {
 
-            repeatEnabled =
-                !repeatEnabled
+            repeatEnabled = !repeatEnabled
 
             updateModeButtons()
         }
 
-        modeButtons.addView(
-            shuffleButton
-        )
+        modeButtons.addView(shuffleButton)
 
-        modeButtons.addView(
-            repeatButton
-        )
+        modeButtons.addView(repeatButton)
 
         root.addView(modeButtons)
 
-        // EQUALIZER
+        val eqTitle = TextView(this)
 
-        val eqTitle =
-            TextView(this)
+        eqTitle.text = "🎚️ EQUALIZER"
 
-        eqTitle.text =
-            "🎚️ EQUALIZER"
+        eqTitle.textSize = 20f
 
-        eqTitle.textSize =
-            20f
+        eqTitle.setTextColor(Color.WHITE)
 
-        eqTitle.setTextColor(
-            Color.WHITE
-        )
-
-        eqTitle.gravity =
-            Gravity.CENTER
+        eqTitle.gravity = Gravity.CENTER
 
         root.addView(eqTitle)
 
-        val eqScroll =
-            HorizontalScrollView(this)
+        val eqScroll = HorizontalScrollView(this)
 
-        equalizerLayout =
-            LinearLayout(this)
+        equalizerLayout = LinearLayout(this)
 
         equalizerLayout.orientation =
             LinearLayout.HORIZONTAL
@@ -412,9 +353,7 @@ class MainActivity : Activity() {
         equalizerLayout.gravity =
             Gravity.CENTER
 
-        eqScroll.addView(
-            equalizerLayout
-        )
+        eqScroll.addView(equalizerLayout)
 
         root.addView(
             eqScroll,
@@ -424,30 +363,20 @@ class MainActivity : Activity() {
             )
         )
 
-        // BASS BOOST
+        val bassButton = Button(this)
 
-        val bassButton =
-            Button(this)
-
-        bassButton.text =
-            "🔊 BASS BOOST OFF"
+        bassButton.text = "🔊 BASS BOOST OFF"
 
         bassButton.setOnClickListener {
 
-            toggleBassBoost(
-                bassButton
-            )
+            toggleBassBoost(bassButton)
         }
 
         root.addView(bassButton)
 
-        // PRESETS
+        val presetButton = Button(this)
 
-        val presetButton =
-            Button(this)
-
-        presetButton.text =
-            "🎛️ PRESETS"
+        presetButton.text = "🎛️ PRESETS"
 
         presetButton.setOnClickListener {
 
@@ -456,38 +385,26 @@ class MainActivity : Activity() {
 
         root.addView(presetButton)
 
-        // MUSIC LIST
+        val heading = TextView(this)
 
-        val heading =
-            TextView(this)
+        heading.text = "🎵 MY MUSIC"
 
-        heading.text =
-            "🎵 MY MUSIC"
+        heading.textSize = 20f
 
-        heading.textSize =
-            20f
-
-        heading.setTextColor(
-            Color.WHITE
-        )
+        heading.setTextColor(Color.WHITE)
 
         root.addView(heading)
 
-        val listScroll =
-            ScrollView(this)
+        val listScroll = ScrollView(this)
 
-        val musicList =
-            LinearLayout(this)
+        val musicList = LinearLayout(this)
 
         musicList.orientation =
             LinearLayout.VERTICAL
 
-        musicList.id =
-            12345
+        musicList.id = 12345
 
-        listScroll.addView(
-            musicList
-        )
+        listScroll.addView(musicList)
 
         root.addView(
             listScroll,
@@ -518,34 +435,29 @@ class MainActivity : Activity() {
 
     private fun setupEqualizer() {
 
-        val player =
-            mediaPlayer ?: return
+        val player = mediaPlayer ?: return
 
         try {
 
             equalizer?.release()
 
-            equalizer =
-                Equalizer(
-                    0,
-                    player.audioSessionId
-                )
+            equalizer = Equalizer(
+                0,
+                player.audioSessionId
+            )
 
-            equalizer?.enabled =
-                true
+            equalizer?.enabled = true
 
             createEqualizerSliders()
 
             bassBoost?.release()
 
-            bassBoost =
-                BassBoost(
-                    0,
-                    player.audioSessionId
-                )
+            bassBoost = BassBoost(
+                0,
+                player.audioSessionId
+            )
 
-            bassBoost?.enabled =
-                false
+            bassBoost?.enabled = false
 
         } catch (_: Exception) {
         }
@@ -553,127 +465,119 @@ class MainActivity : Activity() {
 
     private fun createEqualizerSliders() {
 
-        equalizerLayout.removeAllViews()
+        try {
 
-        val eq =
-            equalizer ?: return
+            equalizerLayout.removeAllViews()
 
-        val bands =
-            eq.numberOfBands.toInt()
+            val eq = equalizer ?: return
 
-        val lower =
-            eq.bandLevelRange[0].toInt()
+            val bands =
+                eq.numberOfBands.toInt()
 
-        val upper =
-            eq.bandLevelRange[1].toInt()
+            val lower =
+                eq.bandLevelRange[0].toInt()
 
-        for (i in 0 until bands) {
+            val upper =
+                eq.bandLevelRange[1].toInt()
 
-            val band =
-                i.toShort()
+            for (i in 0 until bands) {
 
-            val column =
-                LinearLayout(this)
+                val band = i.toShort()
 
-            column.orientation =
-                LinearLayout.VERTICAL
+                val column = LinearLayout(this)
 
-            column.gravity =
-                Gravity.CENTER
+                column.orientation =
+                    LinearLayout.VERTICAL
 
-            val seekBar =
-                SeekBar(this)
+                column.gravity =
+                    Gravity.CENTER
 
-            seekBar.max =
-                upper - lower
+                val seekBar = SeekBar(this)
 
-            seekBar.progress =
-                -lower
+                seekBar.max =
+                    upper - lower
 
-            seekBar.rotation =
-                -90f
+                seekBar.progress =
+                    -lower
 
-            seekBar.setOnSeekBarChangeListener(
-                object :
-                    SeekBar.OnSeekBarChangeListener {
+                seekBar.rotation = -90f
 
-                    override fun onProgressChanged(
-                        seekBar: SeekBar?,
-                        progress: Int,
-                        fromUser: Boolean
-                    ) {
+                seekBar.setOnSeekBarChangeListener(
+                    object :
+                        SeekBar.OnSeekBarChangeListener {
 
-                        if (!fromUser)
-                            return
+                        override fun onProgressChanged(
+                            seekBar: SeekBar?,
+                            progress: Int,
+                            fromUser: Boolean
+                        ) {
 
-                        try {
+                            if (!fromUser) return
 
-                            val level =
-                                (
-                                    progress +
-                                            lower
+                            try {
+
+                                val level =
+                                    (
+                                        progress + lower
                                     ).toShort()
 
-                            eq.setBandLevel(
-                                band,
-                                level
-                            )
+                                eq.setBandLevel(
+                                    band,
+                                    level
+                                )
 
-                        } catch (_: Exception) {
+                            } catch (_: Exception) {
+                            }
+                        }
+
+                        override fun onStartTrackingTouch(
+                            seekBar: SeekBar?
+                        ) {
+                        }
+
+                        override fun onStopTrackingTouch(
+                            seekBar: SeekBar?
+                        ) {
                         }
                     }
+                )
 
-                    override fun onStartTrackingTouch(
-                        seekBar: SeekBar?
-                    ) {
-                    }
+                val frequency = TextView(this)
 
-                    override fun onStopTrackingTouch(
-                        seekBar: SeekBar?
-                    ) {
-                    }
-                }
-            )
+                frequency.text =
+                    formatFrequency(
+                        eq.getCenterFreq(band)
+                    )
 
-            val frequency =
-                TextView(this)
+                frequency.textSize = 12f
 
-            frequency.text =
-                formatFrequency(
-                    eq.getCenterFreq(
-                        band
+                frequency.setTextColor(
+                    Color.WHITE
+                )
+
+                frequency.gravity =
+                    Gravity.CENTER
+
+                column.addView(
+                    seekBar,
+                    LinearLayout.LayoutParams(
+                        180,
+                        70
                     )
                 )
 
-            frequency.textSize =
-                12f
+                column.addView(frequency)
 
-            frequency.setTextColor(
-                Color.WHITE
-            )
-
-            frequency.gravity =
-                Gravity.CENTER
-
-            column.addView(
-                seekBar,
-                LinearLayout.LayoutParams(
-                    180,
-                    70
+                equalizerLayout.addView(
+                    column,
+                    LinearLayout.LayoutParams(
+                        75,
+                        210
+                    )
                 )
-            )
+            }
 
-            column.addView(
-                frequency
-            )
-
-            equalizerLayout.addView(
-                column,
-                LinearLayout.LayoutParams(
-                    75,
-                    210
-                )
-            )
+        } catch (_: Exception) {
         }
     }
 
@@ -681,8 +585,7 @@ class MainActivity : Activity() {
         frequency: Int
     ): String {
 
-        val hz =
-            frequency / 1000
+        val hz = frequency / 1000
 
         return if (hz >= 1000) {
 
@@ -698,15 +601,13 @@ class MainActivity : Activity() {
         button: Button
     ) {
 
-        val bass =
-            bassBoost ?: return
+        val bass = bassBoost ?: return
 
         try {
 
             if (bass.enabled) {
 
-                bass.enabled =
-                    false
+                bass.enabled = false
 
                 button.text =
                     "🔊 BASS BOOST OFF"
@@ -717,8 +618,7 @@ class MainActivity : Activity() {
                     700.toShort()
                 )
 
-                bass.enabled =
-                    true
+                bass.enabled = true
 
                 button.text =
                     "🔊 BASS BOOST ON"
@@ -730,23 +630,17 @@ class MainActivity : Activity() {
 
     private fun showPresets() {
 
-        val presets =
-            arrayOf(
-                "Normal",
-                "Rock",
-                "Pop",
-                "Jazz",
-                "Classical"
-            )
+        val presets = arrayOf(
+            "Normal",
+            "Rock",
+            "Pop",
+            "Jazz",
+            "Classical"
+        )
 
         AlertDialog.Builder(this)
-            .setTitle(
-                "Equalizer Preset"
-            )
-            .setItems(
-                presets
-            ) { _, which ->
-
+            .setTitle("Equalizer Preset")
+            .setItems(presets) { _, which ->
                 applyPreset(which)
             }
             .show()
@@ -756,250 +650,264 @@ class MainActivity : Activity() {
         preset: Int
     ) {
 
-        val eq =
-            equalizer ?: return
+        val eq = equalizer ?: return
 
-        val bands =
-            eq.numberOfBands.toInt()
+        try {
 
-        val range =
-            eq.bandLevelRange
+            val bands =
+                eq.numberOfBands.toInt()
 
-        val min =
-            range[0].toInt()
+            val range =
+                eq.bandLevelRange
 
-        val max =
-            range[1].toInt()
+            val min =
+                range[0].toInt()
 
-        for (i in 0 until bands) {
+            val max =
+                range[1].toInt()
 
-            val level: Short
+            for (i in 0 until bands) {
 
-            when (preset) {
+                val level: Short
 
-                0 -> {
-                    level = 0
+                when (preset) {
+
+                    0 -> {
+                        level = 0
+                    }
+
+                    1 -> {
+
+                        level =
+                            when {
+
+                                i < bands / 3 ->
+                                    (max * 0.60)
+                                        .toInt()
+                                        .toShort()
+
+                                i > bands * 2 / 3 ->
+                                    (max * 0.35)
+                                        .toInt()
+                                        .toShort()
+
+                                else ->
+                                    (max * 0.10)
+                                        .toInt()
+                                        .toShort()
+                            }
+                    }
+
+                    2 -> {
+
+                        level =
+                            when {
+
+                                i < bands / 3 ->
+                                    (max * 0.45)
+                                        .toInt()
+                                        .toShort()
+
+                                i > bands * 2 / 3 ->
+                                    (max * 0.40)
+                                        .toInt()
+                                        .toShort()
+
+                                else ->
+                                    (max * 0.05)
+                                        .toInt()
+                                        .toShort()
+                            }
+                    }
+
+                    3 -> {
+
+                        level =
+                            when {
+
+                                i < bands / 3 ->
+                                    (max * 0.20)
+                                        .toInt()
+                                        .toShort()
+
+                                i > bands * 2 / 3 ->
+                                    (max * 0.20)
+                                        .toInt()
+                                        .toShort()
+
+                                else ->
+                                    (max * 0.25)
+                                        .toInt()
+                                        .toShort()
+                            }
+                    }
+
+                    4 -> {
+
+                        level =
+                            when {
+
+                                i < bands / 3 ->
+                                    (max * 0.30)
+                                        .toInt()
+                                        .toShort()
+
+                                i > bands / 2 ->
+                                    (max * 0.45)
+                                        .toInt()
+                                        .toShort()
+
+                                else ->
+                                    (max * 0.15)
+                                        .toInt()
+                                        .toShort()
+                            }
+                    }
+
+                    else -> {
+                        level = 0
+                    }
                 }
 
-                1 -> {
+                try {
 
-                    level =
-                        when {
+                    val safeLevel =
+                        level.toInt()
+                            .coerceIn(
+                                min,
+                                max
+                            )
+                            .toShort()
 
-                            i < bands / 3 ->
-                                (max * 0.60)
-                                    .toInt()
-                                    .toShort()
+                    eq.setBandLevel(
+                        i.toShort(),
+                        safeLevel
+                    )
 
-                            i > bands * 2 / 3 ->
-                                (max * 0.35)
-                                    .toInt()
-                                    .toShort()
-
-                            else ->
-                                (max * 0.10)
-                                    .toInt()
-                                    .toShort()
-                        }
-                }
-
-                2 -> {
-
-                    level =
-                        when {
-
-                            i < bands / 3 ->
-                                (max * 0.45)
-                                    .toInt()
-                                    .toShort()
-
-                            i > bands * 2 / 3 ->
-                                (max * 0.40)
-                                    .toInt()
-                                    .toShort()
-
-                            else ->
-                                (max * 0.05)
-                                    .toInt()
-                                    .toShort()
-                        }
-                }
-
-                3 -> {
-
-                    level =
-                        when {
-
-                            i < bands / 3 ->
-                                (max * 0.20)
-                                    .toInt()
-                                    .toShort()
-
-                            i > bands * 2 / 3 ->
-                                (max * 0.20)
-                                    .toInt()
-                                    .toShort()
-
-                            else ->
-                                (max * 0.25)
-                                    .toInt()
-                                    .toShort()
-                        }
-                }
-
-                4 -> {
-
-                    level =
-                        when {
-
-                            i < bands / 3 ->
-                                (max * 0.30)
-                                    .toInt()
-                                    .toShort()
-
-                            i > bands / 2 ->
-                                (max * 0.45)
-                                    .toInt()
-                                    .toShort()
-
-                            else ->
-                                (max * 0.15)
-                                    .toInt()
-                                    .toShort()
-                        }
-                }
-
-                else -> {
-                    level = 0
+                } catch (_: Exception) {
                 }
             }
 
-            try {
+            createEqualizerSliders()
 
-                val safeLevel =
-                    level.toInt()
-                        .coerceIn(
-                            min,
-                            max
-                        )
-                        .toShort()
-
-                eq.setBandLevel(
-                    i.toShort(),
-                    safeLevel
-                )
-
-            } catch (_: Exception) {
-            }
+        } catch (_: Exception) {
         }
-
-        createEqualizerSliders()
     }
 
-    private fun getMusicList():
-            LinearLayout {
+    private fun getMusicList(): LinearLayout {
 
-        return findViewById(
-            12345
-        )
+        return findViewById(12345)
     }
 
     private fun loadMusic() {
 
-        val musicList =
-            getMusicList()
+        try {
 
-        musicList.removeAllViews()
+            val musicList =
+                getMusicList()
 
-        songIds.clear()
-        songTitles.clear()
+            musicList.removeAllViews()
 
-        val projection =
-            arrayOf(
+            songIds.clear()
+            songTitles.clear()
+
+            val projection = arrayOf(
                 MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.TITLE
             )
 
-        val cursor =
-            contentResolver.query(
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                projection,
-                "${MediaStore.Audio.Media.IS_MUSIC} != 0",
-                null,
-                "${MediaStore.Audio.Media.TITLE} ASC"
-            )
-
-        if (cursor == null) {
-
-            showMessage(
-                "Music नहीं मिली"
-            )
-
-            return
-        }
-
-        val idIndex =
-            cursor.getColumnIndex(
-                MediaStore.Audio.Media._ID
-            )
-
-        val titleIndex =
-            cursor.getColumnIndex(
-                MediaStore.Audio.Media.TITLE
-            )
-
-        while (cursor.moveToNext()) {
-
-            val id =
-                cursor.getLong(
-                    idIndex
+            val cursor =
+                contentResolver.query(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    projection,
+                    "${MediaStore.Audio.Media.IS_MUSIC} != 0",
+                    null,
+                    "${MediaStore.Audio.Media.TITLE} ASC"
                 )
 
-            val title =
-                cursor.getString(
-                    titleIndex
-                ) ?: "Unknown Song"
+            if (cursor == null) {
 
-            songIds.add(id)
-            songTitles.add(title)
+                showMessage("Music नहीं मिली")
 
-            val song =
-                TextView(this)
-
-            song.text =
-                "▶  $title"
-
-            song.textSize =
-                17f
-
-            song.setTextColor(
-                Color.WHITE
-            )
-
-            song.setPadding(
-                15,
-                20,
-                15,
-                20
-            )
-
-            val position =
-                songIds.size - 1
-
-            song.setOnClickListener {
-
-                playSong(position)
+                return
             }
 
-            musicList.addView(song)
-        }
+            val idIndex =
+                cursor.getColumnIndex(
+                    MediaStore.Audio.Media._ID
+                )
 
-        cursor.close()
+            val titleIndex =
+                cursor.getColumnIndex(
+                    MediaStore.Audio.Media.TITLE
+                )
 
-        if (songIds.isEmpty()) {
+            while (cursor.moveToNext()) {
+
+                if (idIndex < 0)
+                    continue
+
+                val id =
+                    cursor.getLong(idIndex)
+
+                val title =
+                    if (titleIndex >= 0)
+                        cursor.getString(titleIndex)
+                            ?: "Unknown Song"
+                    else
+                        "Unknown Song"
+
+                songIds.add(id)
+                songTitles.add(title)
+
+                val song =
+                    TextView(this)
+
+                song.text =
+                    "▶  $title"
+
+                song.textSize = 17f
+
+                song.setTextColor(
+                    Color.WHITE
+                )
+
+                song.setPadding(
+                    15,
+                    20,
+                    15,
+                    20
+                )
+
+                val position =
+                    songIds.size - 1
+
+                song.setOnClickListener {
+                    playSong(position)
+                }
+
+                musicList.addView(song)
+            }
+
+            cursor.close()
+
+            if (songIds.isEmpty()) {
+
+                showMessage(
+                    "Phone में कोई music file नहीं मिली"
+                )
+            }
+
+        } catch (_: SecurityException) {
 
             showMessage(
-                "Phone में कोई music file नहीं मिली"
+                "Music permission की जरूरत है"
+            )
+
+        } catch (_: Exception) {
+
+            showMessage(
+                "Music load नहीं हो पाया"
             )
         }
     }
@@ -1018,7 +926,11 @@ class MainActivity : Activity() {
             mediaPlayer?.release()
 
             equalizer?.release()
+
             bassBoost?.release()
+
+            equalizer = null
+            bassBoost = null
 
             val uri =
                 ContentUris.withAppendedId(
@@ -1040,8 +952,7 @@ class MainActivity : Activity() {
                 return
             }
 
-            currentSong =
-                position
+            currentSong = position
 
             nowPlaying.text =
                 "🎵 ${songTitles[position]}"
@@ -1049,32 +960,28 @@ class MainActivity : Activity() {
             setupEqualizer()
 
             val volume =
-                volumeBar.progress /
-                        100f
+                volumeBar.progress / 100f
 
             mediaPlayer?.setVolume(
                 volume,
                 volume
             )
 
-            mediaPlayer?.start()
-
-            playButton.text =
-                "⏸"
-
             mediaPlayer?.setOnCompletionListener {
 
                 if (repeatEnabled) {
 
-                    playSong(
-                        currentSong
-                    )
+                    playSong(currentSong)
 
                 } else {
 
                     playNext()
                 }
             }
+
+            mediaPlayer?.start()
+
+            playButton.text = "⏸"
 
             startMusicService(
                 songIds[position],
@@ -1118,15 +1025,11 @@ class MainActivity : Activity() {
 
             if (Build.VERSION.SDK_INT >= 26) {
 
-                startForegroundService(
-                    intent
-                )
+                startForegroundService(intent)
 
             } else {
 
-                startService(
-                    intent
-                )
+                startService(intent)
             }
 
         } catch (_: Exception) {
@@ -1144,8 +1047,7 @@ class MainActivity : Activity() {
 
                 player.pause()
 
-                playButton.text =
-                    "▶"
+                playButton.text = "▶"
 
                 sendServiceAction(
                     MusicService.ACTION_PAUSE
@@ -1155,8 +1057,7 @@ class MainActivity : Activity() {
 
                 player.start()
 
-                playButton.text =
-                    "⏸"
+                playButton.text = "⏸"
 
                 sendServiceAction(
                     MusicService.ACTION_PLAY
@@ -1179,22 +1080,17 @@ class MainActivity : Activity() {
                 MusicService::class.java
             )
 
-        intent.action =
-            action
+        intent.action = action
 
         try {
 
             if (Build.VERSION.SDK_INT >= 26) {
 
-                startForegroundService(
-                    intent
-                )
+                startForegroundService(intent)
 
             } else {
 
-                startService(
-                    intent
-                )
+                startService(intent)
             }
 
         } catch (_: Exception) {
@@ -1296,24 +1192,67 @@ class MainActivity : Activity() {
         message: String
     ) {
 
-        val text =
-            TextView(this)
+        try {
 
-        text.text =
-            message
+            val text =
+                TextView(this)
 
-        text.textSize =
-            17f
+            text.text = message
 
-        text.setTextColor(
-            Color.LTGRAY
-        )
+            text.textSize = 17f
 
-        text.gravity =
-            Gravity.CENTER
+            text.setTextColor(
+                Color.LTGRAY
+            )
 
-        getMusicList()
-            .addView(text)
+            text.gravity =
+                Gravity.CENTER
+
+            getMusicList()
+                .addView(text)
+
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun showStartupError(
+        error: Exception
+    ) {
+
+        try {
+
+            val text =
+                TextView(this)
+
+            text.text =
+                "SUJIT EQUALIZER MUSIC\n\n" +
+                        "App start करने में समस्या हुई.\n" +
+                        "Error: ${error.javaClass.simpleName}"
+
+            text.textSize = 18f
+
+            text.setTextColor(
+                Color.WHITE
+            )
+
+            text.gravity =
+                Gravity.CENTER
+
+            text.setPadding(
+                30,
+                30,
+                30,
+                30
+            )
+
+            text.setBackgroundColor(
+                Color.rgb(16, 20, 24)
+            )
+
+            setContentView(text)
+
+        } catch (_: Exception) {
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -1328,36 +1267,47 @@ class MainActivity : Activity() {
             grantResults
         )
 
-        if (
-            requestCode == 100 &&
-            grantResults.isNotEmpty() &&
-            grantResults[0] ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
+        if (requestCode == 100) {
 
-            loadMusic()
+            if (
+                grantResults.isNotEmpty() &&
+                grantResults[0] ==
+                PackageManager.PERMISSION_GRANTED
+            ) {
 
-        } else {
+                loadMusic()
 
-            showMessage(
-                "Music permission की जरूरत है"
-            )
+            } else {
+
+                showMessage(
+                    "Music permission की जरूरत है"
+                )
+            }
         }
     }
 
     override fun onDestroy() {
 
-        handler.removeCallbacksAndMessages(
-            null
-        )
+        handler.removeCallbacksAndMessages(null)
 
-        equalizer?.release()
-        bassBoost?.release()
+        try {
+            equalizer?.release()
+        } catch (_: Exception) {
+        }
+
+        try {
+            bassBoost?.release()
+        } catch (_: Exception) {
+        }
 
         equalizer = null
         bassBoost = null
 
-        mediaPlayer?.release()
+        try {
+            mediaPlayer?.release()
+        } catch (_: Exception) {
+        }
+
         mediaPlayer = null
 
         super.onDestroy()
