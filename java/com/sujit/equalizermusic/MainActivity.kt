@@ -9,7 +9,7 @@ import android.graphics.Color
 import android.media.MediaPlayer
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
-import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -41,9 +41,12 @@ class MainActivity : Activity() {
 
         createScreen()
 
-        if (android.os.Build.VERSION.SDK_INT >= 33) {
-            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO)
-                != PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT >= 33) {
+
+            if (
+                checkSelfPermission(
+                    Manifest.permission.READ_MEDIA_AUDIO
+                ) != PackageManager.PERMISSION_GRANTED
             ) {
                 requestPermissions(
                     arrayOf(Manifest.permission.READ_MEDIA_AUDIO),
@@ -52,6 +55,7 @@ class MainActivity : Activity() {
             } else {
                 loadMusic()
             }
+
         } else {
             loadMusic()
         }
@@ -60,11 +64,15 @@ class MainActivity : Activity() {
     private fun createScreen() {
 
         val root = LinearLayout(this)
+
         root.orientation = LinearLayout.VERTICAL
         root.setPadding(20, 25, 20, 15)
-        root.setBackgroundColor(Color.rgb(16, 20, 24))
+        root.setBackgroundColor(
+            Color.rgb(16, 20, 24)
+        )
 
         val title = TextView(this)
+
         title.text = "SUJIT EQUALIZER MUSIC"
         title.textSize = 23f
         title.setTextColor(Color.WHITE)
@@ -73,6 +81,7 @@ class MainActivity : Activity() {
         root.addView(title)
 
         nowPlaying = TextView(this)
+
         nowPlaying.text = "\n🎵 Nothing Playing"
         nowPlaying.textSize = 18f
         nowPlaying.setTextColor(Color.LTGRAY)
@@ -93,40 +102,62 @@ class MainActivity : Activity() {
                     progress: Int,
                     fromUser: Boolean
                 ) {
-                    if (fromUser && mediaPlayer != null) {
-                        mediaPlayer!!.seekTo(
-                            mediaPlayer!!.duration * progress / 100
-                        )
+
+                    if (fromUser) {
+
+                        val player = mediaPlayer
+
+                        if (player != null) {
+
+                            try {
+
+                                player.seekTo(
+                                    player.duration *
+                                            progress / 100
+                                )
+
+                            } catch (_: Exception) {
+                            }
+                        }
                     }
                 }
 
                 override fun onStartTrackingTouch(
                     seekBar: SeekBar?
-                ) {}
+                ) {
+                }
 
                 override fun onStopTrackingTouch(
                     seekBar: SeekBar?
-                ) {}
+                ) {
+                }
             }
         )
 
         val buttons = LinearLayout(this)
+
         buttons.gravity = Gravity.CENTER
 
         val previous = Button(this)
+
         previous.text = "⏮"
+
         previous.setOnClickListener {
             playPrevious()
         }
 
         playButton = Button(this)
+
         playButton.text = "▶"
+
         playButton.setOnClickListener {
             togglePlay()
         }
 
         val next = Button(this)
+
         next.text = "⏭"
+
         next.setOnClickListener {
             playNext()
         }
@@ -138,6 +169,7 @@ class MainActivity : Activity() {
         root.addView(buttons)
 
         val eqTitle = TextView(this)
+
         eqTitle.text = "🎚️ EQUALIZER"
         eqTitle.textSize = 20f
         eqTitle.setTextColor(Color.WHITE)
@@ -148,8 +180,12 @@ class MainActivity : Activity() {
         val eqScroll = HorizontalScrollView(this)
 
         equalizerLayout = LinearLayout(this)
-        equalizerLayout.orientation = LinearLayout.HORIZONTAL
-        equalizerLayout.gravity = Gravity.CENTER
+
+        equalizerLayout.orientation =
+            LinearLayout.HORIZONTAL
+
+        equalizerLayout.gravity =
+            Gravity.CENTER
 
         eqScroll.addView(equalizerLayout)
 
@@ -162,7 +198,9 @@ class MainActivity : Activity() {
         )
 
         val bassButton = Button(this)
-        bassButton.text = "🔊 BASS BOOST OFF"
+
+        bassButton.text =
+            "🔊 BASS BOOST OFF"
 
         bassButton.setOnClickListener {
             toggleBassBoost(bassButton)
@@ -171,6 +209,7 @@ class MainActivity : Activity() {
         root.addView(bassButton)
 
         val presetButton = Button(this)
+
         presetButton.text = "🎛️ PRESETS"
 
         presetButton.setOnClickListener {
@@ -180,6 +219,7 @@ class MainActivity : Activity() {
         root.addView(presetButton)
 
         val heading = TextView(this)
+
         heading.text = "🎵 MY MUSIC"
         heading.textSize = 20f
         heading.setTextColor(Color.WHITE)
@@ -189,7 +229,10 @@ class MainActivity : Activity() {
         val listScroll = ScrollView(this)
 
         val musicList = LinearLayout(this)
-        musicList.orientation = LinearLayout.VERTICAL
+
+        musicList.orientation =
+            LinearLayout.VERTICAL
+
         musicList.id = 12345
 
         listScroll.addView(musicList)
@@ -242,27 +285,40 @@ class MainActivity : Activity() {
 
         val eq = equalizer ?: return
 
-        val bands = eq.numberOfBands.toInt()
+        val bands =
+            eq.numberOfBands.toInt()
 
-        val lower = eq.bandLevelRange[0].toInt()
-        val upper = eq.bandLevelRange[1].toInt()
+        val lower =
+            eq.bandLevelRange[0].toInt()
+
+        val upper =
+            eq.bandLevelRange[1].toInt()
 
         for (i in 0 until bands) {
 
             val band = i.toShort()
 
             val column = LinearLayout(this)
-            column.orientation = LinearLayout.VERTICAL
-            column.gravity = Gravity.CENTER
+
+            column.orientation =
+                LinearLayout.VERTICAL
+
+            column.gravity =
+                Gravity.CENTER
 
             val seekBar = SeekBar(this)
 
-            seekBar.max = upper - lower
-            seekBar.progress = -lower
+            seekBar.max =
+                upper - lower
+
+            seekBar.progress =
+                -lower
+
             seekBar.rotation = -90f
 
             seekBar.setOnSeekBarChangeListener(
-                object : SeekBar.OnSeekBarChangeListener {
+                object :
+                    SeekBar.OnSeekBarChangeListener {
 
                     override fun onProgressChanged(
                         seekBar: SeekBar?,
@@ -275,7 +331,8 @@ class MainActivity : Activity() {
                             try {
 
                                 val level =
-                                    (progress + lower).toShort()
+                                    (progress + lower)
+                                        .toShort()
 
                                 eq.setBandLevel(
                                     band,
@@ -289,11 +346,13 @@ class MainActivity : Activity() {
 
                     override fun onStartTrackingTouch(
                         seekBar: SeekBar?
-                    ) {}
+                    ) {
+                    }
 
                     override fun onStopTrackingTouch(
                         seekBar: SeekBar?
-                    ) {}
+                    ) {
+                    }
                 }
             )
 
@@ -335,8 +394,11 @@ class MainActivity : Activity() {
         val hz = frequency / 1000
 
         return if (hz >= 1000) {
+
             "${hz / 1000}.${(hz % 1000) / 100}kHz"
+
         } else {
+
             "${hz}Hz"
         }
     }
@@ -352,13 +414,20 @@ class MainActivity : Activity() {
             if (bass.enabled) {
 
                 bass.enabled = false
-                button.text = "🔊 BASS BOOST OFF"
+
+                button.text =
+                    "🔊 BASS BOOST OFF"
 
             } else {
 
-                bass.setStrength(700.toShort())
+                bass.setStrength(
+                    700.toShort()
+                )
+
                 bass.enabled = true
-                button.text = "🔊 BASS BOOST ON"
+
+                button.text =
+                    "🔊 BASS BOOST ON"
             }
 
         } catch (_: Exception) {
@@ -389,12 +458,17 @@ class MainActivity : Activity() {
 
         val eq = equalizer ?: return
 
-        val bands = eq.numberOfBands.toInt()
+        val bands =
+            eq.numberOfBands.toInt()
 
-        val range = eq.bandLevelRange
+        val range =
+            eq.bandLevelRange
 
-        val min = range[0].toInt()
-        val max = range[1].toInt()
+        val min =
+            range[0].toInt()
+
+        val max =
+            range[1].toInt()
 
         for (i in 0 until bands) {
 
@@ -403,11 +477,14 @@ class MainActivity : Activity() {
             when (preset) {
 
                 0 -> {
+
                     level = 0
                 }
 
                 1 -> {
+
                     level = when {
+
                         i < bands / 3 ->
                             (max * 0.60)
                                 .toInt()
@@ -426,7 +503,9 @@ class MainActivity : Activity() {
                 }
 
                 2 -> {
+
                     level = when {
+
                         i < bands / 3 ->
                             (max * 0.45)
                                 .toInt()
@@ -445,7 +524,9 @@ class MainActivity : Activity() {
                 }
 
                 3 -> {
+
                     level = when {
+
                         i < bands / 3 ->
                             (max * 0.20)
                                 .toInt()
@@ -464,7 +545,9 @@ class MainActivity : Activity() {
                 }
 
                 4 -> {
+
                     level = when {
+
                         i < bands / 3 ->
                             (max * 0.30)
                                 .toInt()
@@ -483,32 +566,39 @@ class MainActivity : Activity() {
                 }
 
                 else -> {
+
                     level = 0
                 }
             }
 
             try {
 
+                val safeLevel =
+                    level.toInt()
+                        .coerceIn(min, max)
+                        .toShort()
+
                 eq.setBandLevel(
                     i.toShort(),
-                    level.coerceIn(
-                        min.toShort(),
-                        max.toShort()
-                    )
+                    safeLevel
                 )
 
             } catch (_: Exception) {
             }
         }
+
+        createEqualizerSliders()
     }
 
     private fun getMusicList(): LinearLayout {
+
         return findViewById(12345)
     }
 
     private fun loadMusic() {
 
-        val musicList = getMusicList()
+        val musicList =
+            getMusicList()
 
         musicList.removeAllViews()
 
@@ -520,16 +610,21 @@ class MainActivity : Activity() {
             MediaStore.Audio.Media.TITLE
         )
 
-        val cursor = contentResolver.query(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            "${MediaStore.Audio.Media.IS_MUSIC} != 0",
-            null,
-            "${MediaStore.Audio.Media.TITLE} ASC"
-        )
+        val cursor =
+            contentResolver.query(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                "${MediaStore.Audio.Media.IS_MUSIC} != 0",
+                null,
+                "${MediaStore.Audio.Media.TITLE} ASC"
+            )
 
         if (cursor == null) {
-            showMessage("Music नहीं मिली")
+
+            showMessage(
+                "Music नहीं मिली"
+            )
+
             return
         }
 
@@ -545,7 +640,8 @@ class MainActivity : Activity() {
 
         while (cursor.moveToNext()) {
 
-            val id = cursor.getLong(idIndex)
+            val id =
+                cursor.getLong(idIndex)
 
             val title =
                 cursor.getString(titleIndex)
@@ -556,10 +652,21 @@ class MainActivity : Activity() {
 
             val song = TextView(this)
 
-            song.text = "▶  $title"
+            song.text =
+                "▶  $title"
+
             song.textSize = 17f
-            song.setTextColor(Color.WHITE)
-            song.setPadding(15, 20, 15, 20)
+
+            song.setTextColor(
+                Color.WHITE
+            )
+
+            song.setPadding(
+                15,
+                20,
+                15,
+                20
+            )
 
             val position =
                 songIds.size - 1
@@ -574,6 +681,7 @@ class MainActivity : Activity() {
         cursor.close()
 
         if (songIds.isEmpty()) {
+
             showMessage(
                 "Phone में कोई music file नहीं मिली"
             )
@@ -603,7 +711,10 @@ class MainActivity : Activity() {
                 )
 
             mediaPlayer =
-                MediaPlayer.create(this, uri)
+                MediaPlayer.create(
+                    this,
+                    uri
+                )
 
             if (mediaPlayer == null) {
 
@@ -642,17 +753,24 @@ class MainActivity : Activity() {
         val player =
             mediaPlayer ?: return
 
-        if (player.isPlaying) {
+        try {
 
-            player.pause()
-            playButton.text = "▶"
+            if (player.isPlaying) {
 
-        } else {
+                player.pause()
 
-            player.start()
-            playButton.text = "⏸"
+                playButton.text = "▶"
 
-            updateProgress()
+            } else {
+
+                player.start()
+
+                playButton.text = "⏸"
+
+                updateProgress()
+            }
+
+        } catch (_: Exception) {
         }
     }
 
@@ -661,10 +779,14 @@ class MainActivity : Activity() {
         if (songIds.isEmpty()) return
 
         val next =
-            if (currentSong + 1 < songIds.size)
+            if (
+                currentSong + 1 <
+                songIds.size
+            ) {
                 currentSong + 1
-            else
+            } else {
                 0
+            }
 
         playSong(next)
     }
@@ -674,10 +796,11 @@ class MainActivity : Activity() {
         if (songIds.isEmpty()) return
 
         val previous =
-            if (currentSong - 1 >= 0)
+            if (currentSong - 1 >= 0) {
                 currentSong - 1
-            else
+            } else {
                 songIds.size - 1
+            }
 
         playSong(previous)
     }
@@ -687,13 +810,20 @@ class MainActivity : Activity() {
         val player =
             mediaPlayer ?: return
 
-        if (!player.isPlaying) return
+        try {
 
-        if (player.duration > 0) {
+            if (!player.isPlaying) return
 
-            progressBar.progress =
-                player.currentPosition * 100 /
-                        player.duration
+            if (player.duration > 0) {
+
+                progressBar.progress =
+                    player.currentPosition *
+                            100 /
+                            player.duration
+            }
+
+        } catch (_: Exception) {
+            return
         }
 
         handler.postDelayed(
@@ -706,14 +836,16 @@ class MainActivity : Activity() {
         message: String
     ) {
 
-        val text = TextView(this)
+        val text =
+            TextView(this)
 
         text.text = message
         text.textSize = 17f
         text.setTextColor(Color.LTGRAY)
         text.gravity = Gravity.CENTER
 
-        getMusicList().addView(text)
+        getMusicList()
+            .addView(text)
     }
 
     override fun onRequestPermissionsResult(
@@ -747,7 +879,9 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
 
-        handler.removeCallbacksAndMessages(null)
+        handler.removeCallbacksAndMessages(
+            null
+        )
 
         equalizer?.release()
         bassBoost?.release()
