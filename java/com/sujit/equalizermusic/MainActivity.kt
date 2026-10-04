@@ -17,6 +17,7 @@ import android.provider.MediaStore
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.*
+import kotlin.random.Random
 
 class MainActivity : Activity() {
 
@@ -28,11 +29,16 @@ class MainActivity : Activity() {
     private lateinit var progressBar: SeekBar
     private lateinit var playButton: Button
     private lateinit var equalizerLayout: LinearLayout
+    private lateinit var shuffleButton: Button
+    private lateinit var repeatButton: Button
 
     private val songIds = ArrayList<Long>()
     private val songTitles = ArrayList<String>()
 
     private var currentSong = -1
+
+    private var shuffleEnabled = false
+    private var repeatEnabled = false
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -67,9 +73,7 @@ class MainActivity : Activity() {
 
         root.orientation = LinearLayout.VERTICAL
         root.setPadding(20, 25, 20, 15)
-        root.setBackgroundColor(
-            Color.rgb(16, 20, 24)
-        )
+        root.setBackgroundColor(Color.rgb(16, 20, 24))
 
         val title = TextView(this)
 
@@ -141,7 +145,6 @@ class MainActivity : Activity() {
         val previous = Button(this)
 
         previous.text = "⏮"
-
         previous.setOnClickListener {
             playPrevious()
         }
@@ -149,7 +152,6 @@ class MainActivity : Activity() {
         playButton = Button(this)
 
         playButton.text = "▶"
-
         playButton.setOnClickListener {
             togglePlay()
         }
@@ -157,7 +159,6 @@ class MainActivity : Activity() {
         val next = Button(this)
 
         next.text = "⏭"
-
         next.setOnClickListener {
             playNext()
         }
@@ -167,6 +168,33 @@ class MainActivity : Activity() {
         buttons.addView(next)
 
         root.addView(buttons)
+
+        val modeButtons = LinearLayout(this)
+
+        modeButtons.gravity = Gravity.CENTER
+
+        shuffleButton = Button(this)
+
+        shuffleButton.text = "🔀 SHUFFLE OFF"
+
+        shuffleButton.setOnClickListener {
+            shuffleEnabled = !shuffleEnabled
+            updateModeButtons()
+        }
+
+        repeatButton = Button(this)
+
+        repeatButton.text = "🔁 REPEAT OFF"
+
+        repeatButton.setOnClickListener {
+            repeatEnabled = !repeatEnabled
+            updateModeButtons()
+        }
+
+        modeButtons.addView(shuffleButton)
+        modeButtons.addView(repeatButton)
+
+        root.addView(modeButtons)
 
         val eqTitle = TextView(this)
 
@@ -247,6 +275,31 @@ class MainActivity : Activity() {
         )
 
         setContentView(root)
+    }
+
+    private fun updateModeButtons() {
+
+        if (shuffleEnabled) {
+
+            shuffleButton.text =
+                "🔀 SHUFFLE ON"
+
+        } else {
+
+            shuffleButton.text =
+                "🔀 SHUFFLE OFF"
+        }
+
+        if (repeatEnabled) {
+
+            repeatButton.text =
+                "🔁 REPEAT ON"
+
+        } else {
+
+            repeatButton.text =
+                "🔁 REPEAT OFF"
+        }
     }
 
     private fun setupEqualizer() {
@@ -477,12 +530,10 @@ class MainActivity : Activity() {
             when (preset) {
 
                 0 -> {
-
                     level = 0
                 }
 
                 1 -> {
-
                     level = when {
 
                         i < bands / 3 ->
@@ -503,7 +554,6 @@ class MainActivity : Activity() {
                 }
 
                 2 -> {
-
                     level = when {
 
                         i < bands / 3 ->
@@ -524,7 +574,6 @@ class MainActivity : Activity() {
                 }
 
                 3 -> {
-
                     level = when {
 
                         i < bands / 3 ->
@@ -545,7 +594,6 @@ class MainActivity : Activity() {
                 }
 
                 4 -> {
-
                     level = when {
 
                         i < bands / 3 ->
@@ -566,7 +614,6 @@ class MainActivity : Activity() {
                 }
 
                 else -> {
-
                     level = 0
                 }
             }
@@ -591,7 +638,6 @@ class MainActivity : Activity() {
     }
 
     private fun getMusicList(): LinearLayout {
-
         return findViewById(12345)
     }
 
@@ -736,7 +782,15 @@ class MainActivity : Activity() {
             playButton.text = "⏸"
 
             mediaPlayer?.setOnCompletionListener {
-                playNext()
+
+                if (repeatEnabled) {
+
+                    playSong(currentSong)
+
+                } else {
+
+                    playNext()
+                }
             }
 
             updateProgress()
@@ -778,15 +832,30 @@ class MainActivity : Activity() {
 
         if (songIds.isEmpty()) return
 
-        val next =
-            if (
-                currentSong + 1 <
-                songIds.size
-            ) {
-                currentSong + 1
-            } else {
-                0
-            }
+        val next: Int
+
+        if (shuffleEnabled && songIds.size > 1) {
+
+            do {
+
+                next = Random.nextInt(
+                    songIds.size
+                )
+
+            } while (next == currentSong)
+
+        } else {
+
+            next =
+                if (
+                    currentSong + 1 <
+                    songIds.size
+                ) {
+                    currentSong + 1
+                } else {
+                    0
+                }
+        }
 
         playSong(next)
     }
